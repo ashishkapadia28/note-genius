@@ -1,7 +1,12 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const path = require('path');
 const prisma = require('../prisma/client');
+const sendEmail = require('../utils/emailSender');
+const authMiddleware = require('../middleware/authMiddleware');
+const { getVerificationEmailTemplate, getPasswordResetEmailTemplate } = require('../utils/emailTemplates');
 const router = express.Router();
 
 // Register
@@ -13,14 +18,66 @@ router.post('/register', async (req, res) => {
         if (existingUser) return res.status(400).json({ error: 'User already exists' });
 
         const hashedPassword = await bcrypt.hash(password, 10);
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+
         const user = await prisma.user.create({
-            data: { name, email, password: hashedPassword },
+            data: {
+                name,
+                email,
+                password: hashedPassword,
+                verificationToken
+            },
         });
 
-        res.status(201).json({ message: 'User created successfully' });
+        // Send Verification Email
+        const verificationLink = `http://localhost:5173/verify-email/${verificationToken}`;
+        const logoPath = path.join(__dirname, '../client/public/logo.png');
+
+        await sendEmail(
+            email,
+            'Verify your Email - Note Genius',
+            getVerificationEmailTemplate(verificationLink, name),
+            [{
+                filename: 'logo.png',
+                path: logoPath,
+                cid: 'logo'
+            }]
+        );
+
+        res.status(201).json({ message: 'User created. Please check your email to verify account.' });
     } catch (error) {
         console.error("Register Error:", error);
         res.status(500).json({ error: 'Error registering user' });
+    }
+});
+
+// Verify Email
+router.post('/verify-email', async (req, res) => {
+    const { token } = req.body;
+    try {
+        if (!token) {
+            console.log("Verify Email: Token is missing in request body");
+            return res.status(400).json({ error: 'Token is missing' });
+        }
+
+        const user = await prisma.user.findFirst({ where: { verificationToken: token } });
+
+        if (!user) {
+            console.log(`Verify Email: Invalid or expired token received: ${token}`);
+            return res.status(400).json({ error: 'Invalid or expired token' });
+        }
+
+        console.log(`Verify Email: Successfully verified user: ${user.email}`);
+
+        await prisma.user.update({
+            where: { id: user.id },
+            data: { isVerified: true, verificationToken: null }
+        });
+
+        res.json({ message: 'Email verified successfully. You can now login.' });
+    } catch (error) {
+        console.error("Verification Error:", error);
+        res.status(500).json({ error: 'Error verifying email' });
     }
 });
 
@@ -32,6 +89,10 @@ router.post('/login', async (req, res) => {
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user) return res.status(400).json({ error: 'Invalid email or password' });
 
+        if (!user.isVerified) {
+            return res.status(400).json({ error: 'Please verify your email first' });
+        }
+
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ error: 'Invalid email or password' });
 
@@ -40,6 +101,86 @@ router.post('/login', async (req, res) => {
     } catch (error) {
         console.error("Login Error:", error);
         res.status(500).json({ error: 'Error logging in' });
+    }
+});
+
+// Forgot Password
+router.post('/forgot-password', async (req, res) => {
+    const { email } = req.body;
+    try {
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user) return res.status(400).json({ error: 'User not found' });
+
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const resetExpires = new Date(Date.now() + 3600000); // 1 hour
+
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                resetPasswordToken: resetToken,
+                resetPasswordExpires: resetExpires
+            }
+        });
+
+        const resetLink = `http://localhost:5173/reset-password/${resetToken}`;
+        const logoPath = path.join(__dirname, '../client/public/logo.png');
+
+        await sendEmail(
+            email,
+            'Reset Password - Note Genius',
+            getPasswordResetEmailTemplate(resetLink, user.name),
+            [{
+                filename: 'logo.png',
+                path: logoPath,
+                cid: 'logo'
+            }]
+        );
+
+        res.json({ message: 'Password reset link sent to email' });
+    } catch (error) {
+        console.error("Forgot Password Error:", error);
+        res.status(500).json({ error: 'Error processing request' });
+    }
+});
+
+// Reset Password
+router.post('/reset-password', async (req, res) => {
+    const { token, newPassword } = req.body;
+    try {
+        const user = await prisma.user.findFirst({
+            where: {
+                resetPasswordToken: token,
+                resetPasswordExpires: { gt: new Date() }
+            }
+        });
+
+        if (!user) return res.status(400).json({ error: 'Invalid or expired token' });
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                password: hashedPassword,
+                resetPasswordToken: null,
+                resetPasswordExpires: null
+            }
+        });
+
+        res.json({ message: 'Password reset successfully' });
+    } catch (error) {
+        console.error("Reset Password Error:", error);
+        res.status(500).json({ error: 'Error resetting password' });
+    }
+});
+
+// Delete Account
+router.delete('/delete-account', authMiddleware, async (req, res) => {
+    try {
+        await prisma.user.delete({ where: { id: req.user.id } });
+        res.json({ message: 'Account deleted successfully' });
+    } catch (error) {
+        console.error("Delete Account Error:", error);
+        res.status(500).json({ error: 'Error deleting account' });
     }
 });
 
