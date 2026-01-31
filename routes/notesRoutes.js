@@ -4,6 +4,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const prisma = require('../prisma/client');
 const { parsePDF } = require('../utils/pdfParser');
 const authMiddleware = require('../middleware/authMiddleware');
+const redis = require('../utils/redisClient');
 const router = express.Router();
 
 const upload = multer({ storage: multer.memoryStorage() });
@@ -52,6 +53,9 @@ ${studyMaterial}`;
             },
         });
 
+        // Invalidate cache
+        await redis.del(`notes_history:${req.user.id}`);
+
         res.json(note);
     } catch (error) {
         console.error(error);
@@ -62,10 +66,21 @@ ${studyMaterial}`;
 // History
 router.get('/history', authMiddleware, async (req, res) => {
     try {
+        const cacheKey = `notes_history:${req.user.id}`;
+        const cachedNotes = await redis.get(cacheKey);
+
+        if (cachedNotes) {
+            console.log('Serving from cache');
+            return res.json(JSON.parse(cachedNotes));
+        }
+
         const notes = await prisma.note.findMany({
             where: { userId: req.user.id },
             orderBy: { createdAt: 'desc' },
         });
+
+        await redis.set(cacheKey, JSON.stringify(notes), 'EX', 3600); // Cache for 1 hour
+
         res.json(notes);
     } catch (error) {
         res.status(500).json({ error: 'Error fetching history' });
