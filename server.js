@@ -26,6 +26,28 @@ app.get('/api/status', (req, res) => {
     res.send('NoteGenius API is running');
 });
 
+// DEBUG ROUTE: Check if client build exists
+app.get('/api/debug-files', (req, res) => {
+    const fs = require('fs');
+    const clientPath = path.join(__dirname, './client');
+    const distPath = path.join(__dirname, './client/dist');
+
+    let result = {
+        root: __dirname,
+        clientExists: fs.existsSync(clientPath),
+        distExists: fs.existsSync(distPath),
+        distContents: [],
+    };
+
+    try {
+        if (result.distExists) result.distContents = fs.readdirSync(distPath);
+    } catch (e) {
+        result.error = e.message;
+    }
+
+    res.json(result);
+});
+
 // The "catchall" handler: for any request that doesn't
 // match one above, send back React's index.html file.
 app.use((req, res, next) => {
