@@ -16,15 +16,15 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-// Verify connection configuration
-transporter.verify(function (error, success) {
-    if (error) {
-        console.error("SMTP Connection Error at Startup:");
-        console.error(error);
-    } else {
-        console.log("SMTP Server is ready to take our messages");
-    }
-});
+// Verify connection configuration (Commented out for Render as it blocks SMTP)
+// transporter.verify(function (error, success) {
+//     if (error) {
+//         console.error("SMTP Connection Error at Startup:");
+//         console.error(error);
+//     } else {
+//         console.log("SMTP Server is ready to take our messages");
+//     }
+// });
 
 const sendEmail = async (to, subject, html, attachments = []) => {
     console.log('[DEBUG] sendEmail called');
