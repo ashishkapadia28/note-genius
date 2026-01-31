@@ -29,11 +29,11 @@ router.post('/register', async (req, res) => {
             },
         });
 
-        // Send Verification Email
+        // Send Verification Email (Non-blocking)
         const verificationLink = `http://localhost:5173/verify-email/${verificationToken}`;
         const logoPath = path.join(__dirname, '../client/public/logo.png');
 
-        await sendEmail(
+        sendEmail(
             email,
             'Verify your Email - Note Genius',
             getVerificationEmailTemplate(verificationLink, name),
@@ -42,7 +42,7 @@ router.post('/register', async (req, res) => {
                 path: logoPath,
                 cid: 'logo'
             }]
-        );
+        ).catch(err => console.error("Background Email Error:", err));
 
         res.status(201).json({ message: 'User created. Please check your email to verify account.' });
     } catch (error) {
