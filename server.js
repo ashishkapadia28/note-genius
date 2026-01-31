@@ -29,13 +29,14 @@ app.get('/api/status', (req, res) => {
 // The "catchall" handler: for any request that doesn't
 // match one above, send back React's index.html file.
 app.use((req, res, next) => {
-    // Optional: Only serve for HTML requests to avoid API confusion
-    if (req.accepts('html')) {
+    // Standard SPA fallback: serve index.html for any GET request
+    // that hasn't matched an API route
+    if (req.method === 'GET' && !req.path.startsWith('/api')) {
         res.sendFile(path.join(__dirname, './client/dist/index.html'));
-        return;
+    } else {
+        // Otherwise it's a 404 for APIs/assets/POSTs
+        res.status(404).json({ error: 'Not Found' });
     }
-    // Otherwise it's a 404 for APIs/assets
-    res.status(404).json({ error: 'Not Found' });
 });
 
 // Global Error Handler
