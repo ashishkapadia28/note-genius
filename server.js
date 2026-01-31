@@ -32,7 +32,19 @@ app.use((req, res, next) => {
     // Standard SPA fallback: serve index.html for any GET request
     // that hasn't matched an API route
     if (req.method === 'GET' && !req.path.startsWith('/api')) {
-        res.sendFile(path.join(__dirname, './client/dist/index.html'));
+        const indexPath = path.join(__dirname, './client/dist/index.html');
+        // DEBUG: Log path verification
+        console.log(`[SPA Fallback] Request: ${req.path}`);
+        console.log(`[SPA Fallback] Serving: ${indexPath}`);
+
+        // Simple file existence check (optional, but good for debugging)
+        const fs = require('fs');
+        if (fs.existsSync(indexPath)) {
+            res.sendFile(indexPath);
+        } else {
+            console.error(`[SPA Fallback] Error: File not found at ${indexPath}`);
+            res.status(500).send(`Server Error: Frontend build not found on server. Path searched: ${indexPath}`);
+        }
     } else {
         // Otherwise it's a 404 for APIs/assets/POSTs
         res.status(404).json({ error: 'Not Found' });
