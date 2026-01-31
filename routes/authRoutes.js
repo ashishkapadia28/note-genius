@@ -12,14 +12,21 @@ const router = express.Router();
 // Register
 router.post('/register', async (req, res) => {
     const { name, email, password } = req.body;
+    console.time("Register-Total");
 
     try {
+        console.time("Register-FindUser");
         const existingUser = await prisma.user.findUnique({ where: { email } });
+        console.timeEnd("Register-FindUser");
         if (existingUser) return res.status(400).json({ error: 'User already exists' });
 
+        console.time("Register-Bcrypt");
         const hashedPassword = await bcrypt.hash(password, 10);
+        console.timeEnd("Register-Bcrypt");
+
         const verificationToken = crypto.randomBytes(32).toString('hex');
 
+        console.time("Register-CreateUser");
         const user = await prisma.user.create({
             data: {
                 name,
@@ -28,11 +35,13 @@ router.post('/register', async (req, res) => {
                 verificationToken
             },
         });
+        console.timeEnd("Register-CreateUser");
 
         // Send Verification Email (Non-blocking)
         const verificationLink = `http://localhost:5173/verify-email/${verificationToken}`;
         const logoPath = path.join(__dirname, '../client/public/logo.png');
 
+        console.time("Register-EmailSetup"); // Measure setup time only
         sendEmail(
             email,
             'Verify your Email - Note Genius',
@@ -43,7 +52,9 @@ router.post('/register', async (req, res) => {
                 cid: 'logo'
             }]
         ).catch(err => console.error("Background Email Error:", err));
+        console.timeEnd("Register-EmailSetup");
 
+        console.timeEnd("Register-Total");
         res.status(201).json({ message: 'User created. Please check your email to verify account.' });
     } catch (error) {
         console.error("Register Error:", error);
