@@ -28,8 +28,14 @@ app.get('/api/status', (req, res) => {
 
 // The "catchall" handler: for any request that doesn't
 // match one above, send back React's index.html file.
-app.get('/:pathMatch(.*)', (req, res) => {
-    res.sendFile(path.join(__dirname, './client/dist/index.html'));
+app.use((req, res, next) => {
+    // Optional: Only serve for HTML requests to avoid API confusion
+    if (req.accepts('html')) {
+        res.sendFile(path.join(__dirname, './client/dist/index.html'));
+        return;
+    }
+    // Otherwise it's a 404 for APIs/assets
+    res.status(404).json({ error: 'Not Found' });
 });
 
 // Global Error Handler
