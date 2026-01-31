@@ -38,7 +38,7 @@ router.post('/register', async (req, res) => {
         console.timeEnd("Register-CreateUser");
 
         // Send Verification Email (Non-blocking)
-        const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+        const clientUrl = (process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/$/, '');
         const verificationLink = `${clientUrl}/verify-email/${verificationToken}`;
         const logoPath = path.join(__dirname, '../client/public/logo.png');
 
@@ -145,7 +145,7 @@ router.post('/forgot-password', async (req, res) => {
             }
         });
 
-        const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+        const clientUrl = (process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/$/, '');
         const resetLink = `${clientUrl}/reset-password/${resetToken}`;
         const logoPath = path.join(__dirname, '../client/public/logo.png');
 
