@@ -84,19 +84,30 @@ router.post('/verify-email', async (req, res) => {
 // Login
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
+    console.time("Login-Total");
 
     try {
+        console.time("Login-FindUser");
         const user = await prisma.user.findUnique({ where: { email } });
+        console.timeEnd("Login-FindUser");
+
         if (!user) return res.status(400).json({ error: 'Invalid email or password' });
 
         if (!user.isVerified) {
             return res.status(400).json({ error: 'Please verify your email first' });
         }
 
+        console.time("Login-Bcrypt");
         const isMatch = await bcrypt.compare(password, user.password);
+        console.timeEnd("Login-Bcrypt");
+
         if (!isMatch) return res.status(400).json({ error: 'Invalid email or password' });
 
+        console.time("Login-JWT");
         const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        console.timeEnd("Login-JWT");
+
+        console.timeEnd("Login-Total");
         res.json({ token, user: { id: user.id, name: user.name, email: user.email } });
     } catch (error) {
         console.error("Login Error:", error);
