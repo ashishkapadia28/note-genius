@@ -13,6 +13,14 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install
 
+# Install client dependencies and build frontend
+WORKDIR /app/client
+RUN npm install
+RUN npm run build
+
+# Return to root directory
+WORKDIR /app
+
 # Copy the rest of the application code
 COPY . .
 
