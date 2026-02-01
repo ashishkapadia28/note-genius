@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { Eye, EyeOff } from 'lucide-react';
 
 const Register = () => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const { register } = useAuth();
     const navigate = useNavigate();
@@ -90,18 +92,31 @@ const Register = () => {
                 </div>
                 <div>
                     <label className="block text-slate-700 text-sm font-semibold mb-2 ml-1">Password</label>
-                    <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:outline-none focus:ring-2 transition-all text-slate-700 ${password && !passwordRegex.test(password)
-                            ? 'border-red-300 focus:ring-red-200 focus:border-red-500'
-                            : 'border-slate-200 focus:ring-primary-500/20 focus:border-primary-500'
-                            }`}
-                        placeholder="Enter Password"
-                        required
-                        disabled={loading}
-                    />
+                    <div className="relative">
+                        <input
+                            type={showPassword ? "text" : "password"}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:outline-none focus:ring-2 transition-all text-slate-700 pr-12 ${password && !passwordRegex.test(password)
+                                ? 'border-red-300 focus:ring-red-200 focus:border-red-500'
+                                : 'border-slate-200 focus:ring-primary-500/20 focus:border-primary-500'
+                                }`}
+                            placeholder="Enter Password"
+                            required
+                            disabled={loading}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                        >
+                            {showPassword ? (
+                                <EyeOff className="w-5 h-5" />
+                            ) : (
+                                <Eye className="w-5 h-5" />
+                            )}
+                        </button>
+                    </div>
                     <div className="mt-3 space-y-1 pl-1">
                         <p className={`text-xs flex items-center ${password.length >= 8 ? 'text-green-600' : 'text-slate-400'}`}>
                             <span className={`w-1.5 h-1.5 rounded-full mr-2 ${password.length >= 8 ? 'bg-green-500' : 'bg-slate-300'}`}></span>

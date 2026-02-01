@@ -2,13 +2,15 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
-import { Lock, Loader2 } from 'lucide-react';
+import { Lock, Loader2, Eye, EyeOff } from 'lucide-react';
 
 const ResetPassword = () => {
     const { token } = useParams();
     const navigate = useNavigate();
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [loading, setLoading] = useState(false);
 
     // Validation Regex (Same as Register)
@@ -52,17 +54,31 @@ const ResetPassword = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                     <label className="block text-slate-700 text-sm font-semibold mb-2 ml-1">New Password</label>
-                    <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:outline-none focus:ring-2 transition-all text-slate-700 ${password && !passwordRegex.test(password)
-                            ? 'border-red-300 focus:ring-red-200 focus:border-red-500'
-                            : 'border-slate-200 focus:ring-primary-500/20 focus:border-primary-500'
-                            }`}
-                        placeholder="Enter new password"
-                        required
-                    />
+                    <div className="relative">
+                        <input
+                            type={showPassword ? "text" : "password"}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:outline-none focus:ring-2 transition-all text-slate-700 pr-12 ${password && !passwordRegex.test(password)
+                                ? 'border-red-300 focus:ring-red-200 focus:border-red-500'
+                                : 'border-slate-200 focus:ring-primary-500/20 focus:border-primary-500'
+                                }`}
+                            placeholder="Enter new password"
+                            required
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                        >
+                            {showPassword ? (
+                                <EyeOff className="w-5 h-5" />
+                            ) : (
+                                <Eye className="w-5 h-5" />
+                            )}
+                        </button>
+                    </div>
+
                     {/* Reuse validation UI or keep simple for now */}
                     <div className="mt-3 space-y-1 pl-1">
                         <p className={`text-xs flex items-center ${password.length >= 8 ? 'text-green-600' : 'text-slate-400'}`}>
@@ -81,14 +97,27 @@ const ResetPassword = () => {
                 </div>
                 <div>
                     <label className="block text-slate-700 text-sm font-semibold mb-2 ml-1">Confirm Password</label>
-                    <input
-                        type="password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-slate-700 placeholder-slate-400"
-                        placeholder="Confirm new password"
-                        required
-                    />
+                    <div className="relative">
+                        <input
+                            type={showConfirmPassword ? "text" : "password"}
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-slate-700 placeholder-slate-400 pr-12"
+                            placeholder="Confirm new password"
+                            required
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                        >
+                            {showConfirmPassword ? (
+                                <EyeOff className="w-5 h-5" />
+                            ) : (
+                                <Eye className="w-5 h-5" />
+                            )}
+                        </button>
+                    </div>
                 </div>
                 <button
                     type="submit"
