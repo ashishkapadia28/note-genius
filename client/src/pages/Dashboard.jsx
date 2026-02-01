@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { createRoot } from 'react-dom/client';
 import api from '../api/axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
-import { Upload, FileText, Loader2, Save } from 'lucide-react';
+import { Upload, FileText, Loader2, Save, Download, CheckCircle, ArrowRight } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { jsPDF } from 'jspdf';
 
 const Dashboard = () => {
     const { user } = useAuth();
@@ -45,8 +47,79 @@ const Dashboard = () => {
         }
     };
 
+    const downloadPDF = async (noteData) => {
+        const doc = new jsPDF('p', 'pt', 'a4');
+        const margin = 30;
+        const width = 595.28; // A4 width in pt
+        const contentWidth = width - (margin * 2);
+
+        // Create a temporary container for rendering the markdown as HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.style.width = `${contentWidth}pt`;
+        tempDiv.style.padding = '20px';
+        tempDiv.style.boxSizing = 'border-box';
+        tempDiv.style.fontFamily = 'Arial, sans-serif';
+        tempDiv.style.fontSize = '12px';
+        tempDiv.style.color = '#000000';
+        tempDiv.style.backgroundColor = '#ffffff';
+        tempDiv.className = 'pdf-content prose prose-sm max-w-none';
+
+        // Ensure it's IN the viewport for html2canvas capture (fix blank pages), but hidden
+        tempDiv.style.position = 'fixed';
+        tempDiv.style.left = '0';
+        tempDiv.style.top = '0';
+        tempDiv.style.zIndex = '-9999';
+        tempDiv.style.visibility = 'visible'; // Must be visible for html2canvas
+
+        document.body.appendChild(tempDiv);
+
+        const content = (
+            <div className="p-4">
+                <h1 style={{ fontSize: '24px', marginBottom: '10px', fontWeight: 'bold' }}>Study Notes</h1>
+                <p style={{ marginBottom: '20px', color: '#666' }}>Generated on: {new Date().toLocaleDateString()}</p>
+                <div className="whitespace-pre-wrap text-black">
+                    <ReactMarkdown>{noteData.aiOutput}</ReactMarkdown>
+                </div>
+            </div>
+        );
+
+        const root = createRoot(tempDiv);
+        root.render(content);
+
+        // Wait for React to render
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        try {
+            await doc.html(tempDiv, {
+                callback: function (pdf) {
+                    pdf.save(`Note_Genius_${new Date().toISOString().split('T')[0]}.pdf`);
+                    setTimeout(() => {
+                        root.unmount();
+                        if (document.body.contains(tempDiv)) {
+                            document.body.removeChild(tempDiv);
+                        }
+                    }, 100);
+                },
+                x: margin,
+                y: margin,
+                width: contentWidth,
+                windowWidth: 800,
+                autoPaging: 'text',
+                margin: [margin, margin, margin, margin]
+            });
+            toast.success("PDF Downloaded!");
+        } catch (err) {
+            console.error("PDF generation failed:", err);
+            toast.error("Failed to download PDF");
+            root.unmount();
+            if (document.body.contains(tempDiv)) {
+                document.body.removeChild(tempDiv);
+            }
+        }
+    };
+
     return (
-        <div className="max-w-5xl mx-auto space-y-10 animate-fade-in">
+        <div className="max-w-5xl mx-auto space-y-10 animate-fade-in pb-10">
             {/* Input Section */}
             <div className={`glass-card rounded-3xl p-1 border border-white/40 shadow-xl transition-all duration-500 ${result ? 'scale-95 opacity-80 hover:opacity-100 hover:scale-100' : 'scale-100'}`}>
                 <div className="bg-white/50 backdrop-blur-sm rounded-[1.4rem] p-8 sm:p-10">
@@ -131,7 +204,7 @@ const Dashboard = () => {
             {result && (
                 <div className="glass-card rounded-3xl p-1 border border-primary-100 shadow-2xl animate-fade-in ring-4 ring-primary-50/50">
                     <div className="bg-white/70 backdrop-blur-md rounded-[1.4rem] p-8 sm:p-12">
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 border-b border-primary-100 pb-6 gap-4">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 border-b border-primary-100 pb-6 gap-4">
                             <div>
                                 <h3 className="text-2xl font-bold text-slate-800 flex items-center">
                                     <span className="w-2 h-8 bg-primary-500 rounded-full mr-3"></span>
@@ -139,10 +212,27 @@ const Dashboard = () => {
                                 </h3>
                                 <p className="text-slate-500 ml-5 mt-1">Generated by NoteGenius AI</p>
                             </div>
-                            <span className="self-start sm:self-center px-4 py-2 bg-green-50 text-green-700 text-sm font-semibold rounded-full flex items-center border border-green-200/50 shadow-sm">
-                                <Save className="w-4 h-4 mr-2" />
-                                Saved to History
-                            </span>
+
+                            <div className="flex flex-wrap gap-2 items-center self-start md:self-center">
+                                <span className="px-3 py-1.5 bg-green-50 text-green-700 text-sm font-semibold rounded-full flex items-center border border-green-200/50 shadow-sm">
+                                    <CheckCircle className="w-4 h-4 mr-1.5" />
+                                    Saved
+                                </span>
+                                <button
+                                    onClick={() => downloadPDF(result)}
+                                    className="px-4 py-2 bg-primary-50 text-primary-700 hover:bg-primary-100 rounded-xl text-sm font-bold transition-colors flex items-center"
+                                >
+                                    <Download className="w-4 h-4 mr-2" />
+                                    PDF
+                                </button>
+                                <button
+                                    onClick={() => navigate('/history')}
+                                    className="px-4 py-2 bg-slate-800 text-white hover:bg-slate-700 rounded-xl text-sm font-bold transition-colors flex items-center shadow-lg shadow-slate-500/20"
+                                >
+                                    History
+                                    <ArrowRight className="w-4 h-4 ml-2" />
+                                </button>
+                            </div>
                         </div>
 
                         <div className="prose prose-lg prose-indigo max-w-none text-slate-700"> {/* Note: prose-indigo is a specific plugin class, might default or we keep as is if no primary alternative */}

@@ -42,10 +42,12 @@ const Navbar = () => {
                                 <img src="/logo.png" alt="NoteGenius Logo" className="h-10 w-auto" />
                             </Link>
                         </div>
-                        <div className="flex items-center space-x-2 sm:space-x-4">
+
+                        {/* Desktop Navigation */}
+                        <div className="hidden md:flex items-center space-x-2 sm:space-x-4">
                             {user ? (
                                 <>
-                                    <div className="hidden md:flex space-x-1">
+                                    <div className="flex space-x-1">
                                         <Link to="/" className="text-slate-600 hover:text-primary-600 hover:bg-primary-50 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200">
                                             Dashboard
                                         </Link>
@@ -109,8 +111,104 @@ const Navbar = () => {
                                 </>
                             )}
                         </div>
+
+                        {/* Mobile menu button */}
+                        <div className="flex items-center md:hidden">
+                            <button
+                                onClick={() => setShowUserMenu(!showUserMenu)}
+                                className="inline-flex items-center justify-center p-2 rounded-xl text-slate-600 hover:text-primary-600 hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
+                            >
+                                <span className="sr-only">Open main menu</span>
+                                {!showUserMenu ? (
+                                    <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                                    </svg>
+                                ) : (
+                                    <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </div>
+
+                {/* Mobile Menu */}
+                {showUserMenu && (
+                    <div className="md:hidden animate-fade-in border-t border-slate-100/50">
+                        <div className="px-2 pt-2 pb-3 space-y-1 bg-white/80 backdrop-blur-md rounded-b-2xl shadow-lg border-x border-b border-white/20">
+                            {user ? (
+                                <>
+                                    <div className="px-3 py-2 mb-2 bg-primary-50/50 rounded-xl border border-primary-100/50">
+                                        <p className="text-sm font-medium text-slate-500">Signed in as</p>
+                                        <p className="text-sm font-bold text-primary-700 truncate">{user.name}</p>
+                                    </div>
+                                    <Link
+                                        to="/"
+                                        onClick={() => setShowUserMenu(false)}
+                                        className="block px-3 py-2 rounded-xl text-base font-medium text-slate-700 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                                    >
+                                        <div className="flex items-center">
+                                            <BookOpen className="w-4 h-4 mr-3" />
+                                            Dashboard
+                                        </div>
+                                    </Link>
+                                    <Link
+                                        to="/history"
+                                        onClick={() => setShowUserMenu(false)}
+                                        className="block px-3 py-2 rounded-xl text-base font-medium text-slate-700 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                                    >
+                                        <div className="flex items-center">
+                                            <BookOpen className="w-4 h-4 mr-3" />
+                                            History
+                                        </div>
+                                    </Link>
+                                    <button
+                                        onClick={() => {
+                                            setShowUserMenu(false);
+                                            setShowDeleteConfirm(true);
+                                        }}
+                                        className="w-full text-left block px-3 py-2 rounded-xl text-base font-medium text-red-600 hover:bg-red-50 transition-colors"
+                                    >
+                                        <div className="flex items-center">
+                                            <Trash2 className="w-4 h-4 mr-3" />
+                                            Delete Account
+                                        </div>
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setShowUserMenu(false);
+                                            setShowLogoutConfirm(true);
+                                        }}
+                                        className="w-full text-left block px-3 py-2 rounded-xl text-base font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                                    >
+                                        <div className="flex items-center">
+                                            <LogOut className="w-4 h-4 mr-3" />
+                                            Logout
+                                        </div>
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <Link
+                                        to="/login"
+                                        onClick={() => setShowUserMenu(false)}
+                                        className="block px-3 py-2 rounded-xl text-base font-medium text-slate-700 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                                    >
+                                        Login
+                                    </Link>
+                                    <Link
+                                        to="/register"
+                                        onClick={() => setShowUserMenu(false)}
+                                        className="block px-3 py-2 rounded-xl text-base font-bold text-primary-600 hover:bg-primary-50 transition-colors"
+                                    >
+                                        Get Started
+                                    </Link>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                )}
             </nav>
 
             {/* Logout Confirmation Modal */}
