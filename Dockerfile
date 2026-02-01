@@ -13,6 +13,9 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install
 
+# Copy the rest of the application code
+COPY . .
+
 # Install client dependencies and build frontend
 WORKDIR /app/client
 RUN npm install
@@ -20,9 +23,6 @@ RUN npm run build
 
 # Return to root directory
 WORKDIR /app
-
-# Copy the rest of the application code
-COPY . .
 
 # Generate Prisma Client
 RUN npx prisma generate
